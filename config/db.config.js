@@ -9,8 +9,16 @@ const sequelize = new Sequelize(
   process.env.DB_PASS,
   {
     host: process.env.DB_HOST,
-    dialect: process.env.DB_DIALECT,
-    logging: false // Puedes poner 'true' para ver las consultas SQL
+    // 🛑 CAMBIO CLAVE 1: Usamos postgres
+    dialect: 'postgres', 
+    logging: false, 
+    // 🛑 CAMBIO CLAVE 2: Configuración SSL requerida por Render/Cloud DBs
+    dialectOptions: {
+        ssl: {
+            require: true, 
+            rejectUnauthorized: false // Permite la conexión sin certificado CA estricto
+        }
+    }
   }
 );
 
@@ -18,19 +26,22 @@ const sequelize = new Sequelize(
 async function testConnection() {
   try {
     await sequelize.authenticate();
-    console.log('✅ Conexión a la base de datos MySQL establecida correctamente.');
+    console.log('✅ Conexión a la base de datos PostgreSQL establecida correctamente.');
   } catch (error) {
     console.error('❌ Error de conexión a la base de datos:', error);
+    // No salimos del proceso aquí, esperamos la sincronización
   }
 }
 
-// Sincronizar modelos con la base de datos (crear tablas si no existen)
+// Sincronizar modelos con la base de datos 
 async function syncModels() {
   try {
-    await sequelize.sync({ alter: true }); // 'alter: true' ajusta las tablas sin borrarlas
+    await sequelize.sync({ alter: true }); 
     console.log('✨ Modelos de Sequelize sincronizados con la DB.');
   } catch (error) {
     console.error('❌ Error al sincronizar modelos:', error);
+    // Salimos del proceso si hay un error al sincronizar (la app no puede funcionar)
+    throw new Error("Fallo al crear tablas. Verifique logs.");
   }
 }
 
